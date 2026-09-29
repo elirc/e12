@@ -1,0 +1,175 @@
+{
+  "passed": true,
+  "total": 118,
+  "backend": 98,
+  "browser": 20,
+  "counting": "98 backend identities plus 20 browser workflows. Clean-copy backend tests repeat the same cases and are not added again. Setup/syntax/assets are additional gates, not inflated test totals.",
+  "backendExecution": {
+    "command": [
+      "node",
+      "verification/run-tests.js"
+    ],
+    "exitCode": 0,
+    "seconds": 32.54
+  },
+  "browserExecution": {
+    "command": [
+      "python",
+      "verification/verify_browser.py",
+      "<new-evidence-directory>"
+    ],
+    "seconds": 92.54,
+    "checks": [
+      {
+        "name": "explicit sign-in without persisted credentials",
+        "passed": true
+      },
+      {
+        "name": "search and bounded list pagination",
+        "passed": true
+      },
+      {
+        "name": "flag creation renders hostile text literally",
+        "passed": true
+      },
+      {
+        "name": "stale writes preserve changed fields and refresh unedited fields",
+        "passed": true
+      },
+      {
+        "name": "protected changes require acknowledgment of the current draft",
+        "passed": true
+      },
+      {
+        "name": "environment create edit and reference-safe delete",
+        "passed": true
+      },
+      {
+        "name": "project create edit and delete",
+        "passed": true
+      },
+      {
+        "name": "segment create and edit typed constraints",
+        "passed": true
+      },
+      {
+        "name": "invalid JSON reports the field and preserves the draft",
+        "passed": true
+      },
+      {
+        "name": "strategy create edit and scoped segment reference",
+        "passed": true
+      },
+      {
+        "name": "variant defaults typed JSON payload update and delete",
+        "passed": true
+      },
+      {
+        "name": "dependency creation immutable review and removal",
+        "passed": true
+      },
+      {
+        "name": "one-time token display dismissal and revocation",
+        "passed": true
+      },
+      {
+        "name": "lost creation response blocks automatic retry and retains draft",
+        "passed": true
+      },
+      {
+        "name": "server write errors require review before a retained edit can retry",
+        "passed": true
+      },
+      {
+        "name": "archived flag deletion cascades owned strategy and releases segment",
+        "passed": true
+      },
+      {
+        "name": "context playground evaluates accepted configuration",
+        "passed": true
+      },
+      {
+        "name": "member permissions allow scoped writes and deny global creation",
+        "passed": true
+      },
+      {
+        "name": "viewer can inspect without mutation controls",
+        "passed": true
+      },
+      {
+        "name": "mobile layout sign-out and no uncaught browser errors",
+        "passed": true
+      }
+    ]
+  },
+  "cleanSetup": {
+    "passed": true,
+    "backendTestsRepeated": 98,
+    "noNpmDependencies": true,
+    "sourceFilesCopied": 35,
+    "gates": [
+      {
+        "name": "tests",
+        "command": [
+          "C:\\Program Files\\nodejs\\npm.cmd",
+          "test"
+        ],
+        "exitCode": 0,
+        "seconds": 64.49,
+        "stdoutOmitted": false
+      },
+      {
+        "name": "owner-setup",
+        "command": [
+          "node",
+          "src/server/setup.js",
+          "owner",
+          "Clean verification owner",
+          "owner@example.invalid"
+        ],
+        "exitCode": 0,
+        "seconds": 2.36,
+        "stdoutOmitted": true
+      },
+      {
+        "name": "owner-refuses-overwrite",
+        "command": [
+          "node",
+          "src/server/setup.js",
+          "owner",
+          "Replacement",
+          "replacement@example.invalid"
+        ],
+        "exitCode": 1,
+        "seconds": 2.51,
+        "stdoutOmitted": true
+      },
+      {
+        "name": "cli-startup-assets-and-owner-authentication",
+        "passed": true,
+        "staticAssets": 3,
+        "seconds": 5.32
+      }
+    ]
+  },
+  "syntax": {
+    "command": [
+      "node",
+      "--check",
+      "src/ui/app.js"
+    ],
+    "exitCode": 0,
+    "pythonBrowserScriptParsed": true
+  },
+  "screenshotsReviewed": 5,
+  "originalDataPreserved": {
+    "file": "data/state.json",
+    "sha256": "c431fd7eb82749fa862a54700b4872f4fee735ff2444682e739985c079dab692"
+  },
+  "limits": [
+    "Loopback local JSON store; no distributed persistence or power-loss guarantee.",
+    "No durable mutation receipts, metrics deduplication/automatic pruning, or account recovery.",
+    "Basic persisted shape/identity validation; no complete relational migration validation or duplicate-JSON-key rejection.",
+    "Chromium desktop/mobile checks, not all-browser or assistive-technology certification."
+  ]
+}

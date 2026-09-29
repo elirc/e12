@@ -1,0 +1,23 @@
+{
+  "name": "feature-flag-platform",
+  "version": "0.1.0",
+  "description": "A dependency-light feature flag platform built for learning.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node src/server/server.js",
+    "start": "node src/server/server.js",
+    "setup": "node src/server/setup.js",
+    "test": "node verification/run-tests.js"
+  },
+  "keywords": [
+    "feature-flags",
+    "rollouts",
+    "rbac",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT"
+}

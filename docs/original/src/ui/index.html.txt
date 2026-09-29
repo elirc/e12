@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Feature Flag Platform</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Control Plane</p>
+          <h1>Feature Flag Platform</h1>
+          <p class="lede">
+            Safe rollout management with projects, environments, segments, variants, audit logs,
+            and a snapshot-based evaluator.
+          </p>
+        </div>
+
+        <form id="auth-form" class="panel stacked">
+          <label for="token-input">Admin token</label>
+          <input id="token-input" name="token" placeholder="demo-instance-admin-token" />
+          <button type="submit">Connect</button>
+          <small>Seed PAT: <code>demo-instance-admin-token</code></small>
+        </form>
+
+        <div class="panel stacked">
+          <label for="project-select">Project</label>
+          <select id="project-select"></select>
+          <label for="environment-select">Environment</label>
+          <select id="environment-select"></select>
+        </div>
+
+        <form id="project-form" class="panel stacked">
+          <h2>Create Project</h2>
+          <input name="name" placeholder="Name" />
+          <input name="key" placeholder="key" />
+          <textarea name="description" placeholder="Description"></textarea>
+          <button type="submit">Create project</button>
+        </form>
+
+        <form id="token-form" class="panel stacked">
+          <h2>Create Token</h2>
+          <input name="name" placeholder="Token name" />
+          <select name="type">
+            <option value="personal">personal</option>
+            <option value="client">client</option>
+            <option value="frontend">frontend</option>
+          </select>
+          <input name="scopes" value="evaluate" placeholder="Scopes comma separated" />
+          <button type="submit">Create token</button>
+        </form>
+      </aside>
+
+      <main class="content">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">Evaluation + Admin</p>
+            <h2>Projects, flags, segments, tokens, and debug visibility in one place.</h2>
+          </div>
+          <div id="status-pill" class="pill">Disconnected</div>
+        </header>
+
+        <section class="grid">
+          <article class="panel">
+            <h3>Project Health</h3>
+            <div id="dashboard"></div>
+          </article>
+
+          <article class="panel">
+            <h3>Playground</h3>
+            <form id="playground-form" class="stacked">
+              <textarea id="context-input" rows="8">
+{
+  "userId": "user-123",
+  "sessionId": "sess-1",
+  "plan": "pro",
+  "appName": "web-store"
+}</textarea
+              >
+              <button type="submit">Evaluate context</button>
+            </form>
+            <pre id="playground-output" class="code"></pre>
+          </article>
+        </section>
+
+        <section class="grid wide">
+          <article class="panel">
+            <div class="row between">
+              <h3>Flags</h3>
+              <div class="inline-filters">
+                <select id="flag-type-filter">
+                  <option value="">All types</option>
+                  <option value="release">release</option>
+                  <option value="experiment">experiment</option>
+                  <option value="operational">operational</option>
+                  <option value="kill_switch">kill_switch</option>
+                  <option value="permission">permission</option>
+                </select>
+                <label><input type="checkbox" id="flag-stale-filter" /> stale</label>
+                <label><input type="checkbox" id="flag-archived-filter" /> archived</label>
+              </div>
+            </div>
+            <div id="flags-list" class="list"></div>
+          </article>
+
+          <article class="panel">
+            <h3>Flag Detail</h3>
+            <div id="flag-detail" class="detail-empty">Select a flag to inspect strategies and history.</div>
+          </article>
+        </section>
+
+        <section class="grid wide">
+          <article class="panel">
+            <h3>Create Flag</h3>
+            <form id="flag-form" class="stacked">
+              <input name="name" placeholder="Flag name" />
+              <input name="key" placeholder="flag_key" />
+              <select name="type">
+                <option value="release">release</option>
+                <option value="experiment">experiment</option>
+                <option value="operational">operational</option>
+                <option value="kill_switch">kill_switch</option>
+                <option value="permission">permission</option>
+              </select>
+              <textarea name="description" placeholder="Description"></textarea>
+              <label><input type="checkbox" name="impressionData" checked /> impression data</label>
+              <button type="submit">Create flag</button>
+            </form>
+          </article>
+
+          <article class="panel">
+            <h3>Create Strategy</h3>
+            <form id="strategy-form" class="stacked">
+              <select name="flagId" id="strategy-flag-select"></select>
+              <select name="type">
+                <option value="enabled_for_all">enabled_for_all</option>
+                <option value="gradual_rollout">gradual_rollout</option>
+                <option value="disabled">disabled</option>
+              </select>
+              <input name="name" placeholder="Strategy name" />
+              <input name="rollout" type="number" min="0" max="100" value="25" />
+              <input name="stickiness" value="userId" />
+              <textarea name="constraints" placeholder='Constraints JSON, e.g. [{"field":"plan","operator":"in","values":["pro"]}]'></textarea>
+              <textarea name="variants" placeholder='Variants JSON, e.g. [{"name":"control","weight":50},{"name":"treatment","weight":50}]'></textarea>
+              <button type="submit">Attach strategy</button>
+            </form>
+          </article>
+        </section>
+
+        <section class="grid wide">
+          <article class="panel">
+            <h3>Tokens</h3>
+            <div id="tokens-list" class="list"></div>
+          </article>
+
+          <article class="panel">
+            <h3>Audit Trail</h3>
+            <div id="audit-list" class="list"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

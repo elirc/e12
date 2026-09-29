@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Feature Flag Workshop</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to workspace</a>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Configuration and rollout management</p>
+          <h1>Feature Flag Workshop</h1>
+          <p>Build clear rules. Review changes. Keep a useful history.</p>
+        </div>
+        <div id="session" class="session" hidden>
+          <span id="identity"></span
+          ><button id="sign-out" type="button" class="secondary">
+            Sign out
+          </button>
+        </div>
+      </header>
+      <p id="flash" class="flash" role="status" aria-live="polite"></p>
+      <main id="main">
+        <section id="login-panel" class="panel login">
+          <div>
+            <h2>Open your workspace</h2>
+            <p>
+              Use the personal token created by the local setup command. Your
+              token stays in this tab's memory.
+            </p>
+            <p class="muted">
+              First visit? Follow the project README to create your own
+              workspace or an explicitly disposable demo.
+            </p>
+          </div>
+          <form id="login-form" class="stack">
+            <label for="login-token">Personal access token</label
+            ><input
+              id="login-token"
+              type="password"
+              required
+              maxlength="512"
+              autocomplete="off"
+              spellcheck="false"
+            /><button type="submit">Connect</button>
+          </form>
+        </section>
+        <section id="new-token-panel" class="panel token-result" hidden>
+          <h2>Save this new token privately</h2>
+          <p>
+            It is shown only for this creation response. Copy it before leaving
+            this page.
+          </p>
+          <pre id="new-token-value"></pre>
+          <button id="dismiss-token" type="button" class="secondary">
+            I saved it; hide the token
+          </button>
+        </section>
+        <div id="workspace" hidden>
+          <div class="toolbar panel">
+            <label for="project-scope"
+              >Project scope<select id="project-scope"></select
+            ></label>
+            <p id="revision" class="muted"></p>
+            <button id="refresh" type="button" class="secondary">
+              Refresh workspace
+            </button>
+          </div>
+          <div class="workspace-grid">
+            <aside class="panel stack">
+              <label for="resource-kind"
+                >Manage<select id="resource-kind">
+                  <option value="flags">Flags</option>
+                  <option value="projects">Projects</option>
+                  <option value="environments">Environments</option>
+                  <option value="strategies">Strategies</option>
+                  <option value="segments">Segments</option>
+                  <option value="variants">Variants</option>
+                  <option value="dependencies">Dependencies</option>
+                  <option value="tokens">Tokens</option>
+                </select></label
+              ><label for="search"
+                >Find by name or key<input
+                  id="search"
+                  type="search"
+                  maxlength="150" /></label
+              ><button id="new-record" type="button">New record</button>
+              <div id="record-list" class="record-list"></div>
+              <div class="pager">
+                <button id="previous" type="button" class="secondary">
+                  Previous</button
+                ><span id="page-label" role="status"></span
+                ><button id="next" type="button" class="secondary">Next</button>
+              </div>
+            </aside>
+            <section class="panel editor">
+              <h2 id="editor-title">Select a record</h2>
+              <p id="editor-context" class="muted"></p>
+              <p id="editor-help"></p>
+              <form id="editor-form">
+                <div id="fields" class="form-grid"></div>
+                <div id="protection" class="protection" hidden></div>
+                <p id="permission-note" class="muted"></p>
+                <div class="actions">
+                  <button id="save-record" type="submit">Save record</button
+                  ><button id="discard-draft" type="button" class="secondary">
+                    Discard changes</button
+                  ><button id="delete-record" type="button" class="danger">
+                    Delete record
+                  </button>
+                </div>
+              </form>
+              <div class="review-actions">
+                <button id="review-latest" type="button" class="secondary">
+                  Review latest while keeping my draft
+                </button>
+              </div>
+              <section id="review-panel" class="review" hidden>
+                <h3>Compare before continuing</h3>
+                <p id="review-message"></p>
+                <div class="comparison">
+                  <div>
+                    <h4>Latest accepted state</h4>
+                    <pre id="latest-record"></pre>
+                  </div>
+                  <div>
+                    <h4>Your draft changes</h4>
+                    <pre id="draft-record"></pre>
+                  </div>
+                </div>
+                <button id="accept-review" type="button">
+                  I reviewed the latest state; keep my changes
+                </button>
+              </section>
+            </section>
+          </div>
+          <section class="panel learning-tools">
+            <div>
+              <h2>Try a user context</h2>
+              <p class="muted">
+                See how the accepted configuration evaluates for one user. This
+                does not change flags.
+              </p>
+              <form id="playground-form" class="stack">
+                <label for="playground-project"
+                  >Evaluation project<select
+                    id="playground-project"
+                  ></select></label
+                ><label for="playground-environment"
+                  >Evaluation environment<select
+                    id="playground-environment"
+                  ></select></label
+                ><label for="context-json"
+                  >Context (JSON object)<textarea
+                    id="context-json"
+                    rows="5"
+                    spellcheck="false"
+                  >
+{"userId":"learner-1","plan":"pro"}</textarea
+                  ></label
+                ><button type="submit">Evaluate context</button>
+              </form>
+              <pre id="playground-result" class="output" tabindex="0"></pre>
+            </div>
+            <div>
+              <h2>Recent accepted changes</h2>
+              <p class="muted">
+                Audit entries remain after a record is removed.
+              </p>
+              <div id="audit-list" class="audit-list"></div>
+            </div>
+          </section>
+        </div>
+      </main>
+      <footer>
+        Local learning workspace. Keep a copy of your data before recovery or
+        migration exercises.
+      </footer>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

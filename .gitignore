@@ -1,0 +1,7 @@
+data/state.json
+data/*.json
+data/*.lock
+data/*.tmp
+__pycache__/
+.venv/
+verification/browser-evidence*/

@@ -1,0 +1,410 @@
+const state = {
+  token: localStorage.getItem("adminToken") || "demo-instance-admin-token",
+  bootstrap: null,
+  selectedProjectId: null,
+  selectedEnvironmentId: null,
+  selectedFlagId: null,
+};
+
+const els = {
+  authForm: document.querySelector("#auth-form"),
+  tokenInput: document.querySelector("#token-input"),
+  statusPill: document.querySelector("#status-pill"),
+  projectSelect: document.querySelector("#project-select"),
+  environmentSelect: document.querySelector("#environment-select"),
+  dashboard: document.querySelector("#dashboard"),
+  flagsList: document.querySelector("#flags-list"),
+  flagDetail: document.querySelector("#flag-detail"),
+  tokensList: document.querySelector("#tokens-list"),
+  auditList: document.querySelector("#audit-list"),
+  playgroundForm: document.querySelector("#playground-form"),
+  playgroundOutput: document.querySelector("#playground-output"),
+  contextInput: document.querySelector("#context-input"),
+  flagForm: document.querySelector("#flag-form"),
+  projectForm: document.querySelector("#project-form"),
+  strategyForm: document.querySelector("#strategy-form"),
+  strategyFlagSelect: document.querySelector("#strategy-flag-select"),
+  tokenForm: document.querySelector("#token-form"),
+  typeFilter: document.querySelector("#flag-type-filter"),
+  staleFilter: document.querySelector("#flag-stale-filter"),
+  archivedFilter: document.querySelector("#flag-archived-filter"),
+};
+
+els.tokenInput.value = state.token;
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${state.token}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(payload.error || "Request failed");
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+function selectedProject() {
+  return state.bootstrap?.projects.find((project) => project.id === state.selectedProjectId) || null;
+}
+
+function selectedEnvironment() {
+  return selectedProject()?.environments.find(
+    (environment) => environment.id === state.selectedEnvironmentId,
+  );
+}
+
+function selectedFlag() {
+  return state.bootstrap?.flags.find((flag) => flag.id === state.selectedFlagId) || null;
+}
+
+function filteredFlags() {
+  return (state.bootstrap?.flags || []).filter((flag) => {
+    if (state.selectedProjectId && flag.projectId !== state.selectedProjectId) {
+      return false;
+    }
+    if (els.typeFilter.value && flag.type !== els.typeFilter.value) {
+      return false;
+    }
+    if (els.staleFilter.checked && !flag.stale) {
+      return false;
+    }
+    if (els.archivedFilter.checked && !flag.archived) {
+      return false;
+    }
+    return true;
+  });
+}
+
+async function refreshDashboard() {
+  if (!state.selectedProjectId || !state.selectedEnvironmentId) {
+    return;
+  }
+  const dashboard = await api(
+    `/api/admin/dashboard?projectId=${state.selectedProjectId}&environmentId=${state.selectedEnvironmentId}`,
+  );
+  els.dashboard.innerHTML = `
+    <div class="list-item">
+      <strong>${dashboard.project.name}</strong>
+      <p>${dashboard.environment.name}</p>
+      <p class="muted">Stale flags: ${dashboard.staleFlags} | Archived: ${dashboard.archivedFlags}</p>
+      <p class="muted">Evaluation traffic: ${dashboard.evaluationTraffic} | Missing owners: ${dashboard.missingOwners}</p>
+    </div>
+    ${dashboard.recentChanges
+      .map(
+        (entry) => `
+        <div class="list-item">
+          <strong>${entry.action}</strong>
+          <p class="muted">${entry.resourceType} · ${new Date(entry.createdAt).toLocaleString()}</p>
+        </div>`,
+      )
+      .join("")}
+  `;
+}
+
+function renderSelectors() {
+  const projects = state.bootstrap?.projects || [];
+  if (!state.selectedProjectId && projects[0]) {
+    state.selectedProjectId = projects[0].id;
+  }
+
+  els.projectSelect.innerHTML = projects
+    .map((project) => `<option value="${project.id}">${project.name}</option>`)
+    .join("");
+  els.projectSelect.value = state.selectedProjectId || "";
+
+  const environments = selectedProject()?.environments || [];
+  if (!environments.some((environment) => environment.id === state.selectedEnvironmentId)) {
+    state.selectedEnvironmentId = environments[0]?.id || null;
+  }
+  els.environmentSelect.innerHTML = environments
+    .map((environment) => `<option value="${environment.id}">${environment.name}</option>`)
+    .join("");
+  els.environmentSelect.value = state.selectedEnvironmentId || "";
+}
+
+function renderFlags() {
+  const flags = filteredFlags();
+  els.flagsList.innerHTML = flags
+    .map(
+      (flag) => `
+      <button class="list-item ${flag.id === state.selectedFlagId ? "active" : ""}" data-flag-id="${flag.id}">
+        <div class="row between">
+          <strong>${flag.name}</strong>
+          <span>${flag.type}</span>
+        </div>
+        <p>${flag.description || "No description"}</p>
+        <p class="muted">stale: ${flag.stale} | archived: ${flag.archived} | strategies: ${flag.strategies.length}</p>
+      </button>`,
+    )
+    .join("");
+
+  if (!state.selectedFlagId && flags[0]) {
+    state.selectedFlagId = flags[0].id;
+  }
+
+  els.strategyFlagSelect.innerHTML = flags
+    .map((flag) => `<option value="${flag.id}">${flag.name}</option>`)
+    .join("");
+  if (state.selectedFlagId) {
+    els.strategyFlagSelect.value = state.selectedFlagId;
+  }
+}
+
+function renderFlagDetail() {
+  const flag = selectedFlag();
+  if (!flag) {
+    els.flagDetail.innerHTML = `<div class="detail-empty">Select a flag to inspect strategies and history.</div>`;
+    return;
+  }
+
+  const projectAudit = (state.bootstrap?.audit || []).filter((entry) => entry.resourceId === flag.id);
+  els.flagDetail.innerHTML = `
+    <div class="stacked">
+      <div class="list-item">
+        <strong>${flag.name}</strong>
+        <p>${flag.description || "No description"}</p>
+        <p class="muted">Key: ${flag.key} | Impression data: ${flag.impressionData}</p>
+        <p class="muted">Environments: ${flag.environments.map((environment) => environment.name).join(", ")}</p>
+      </div>
+      ${(flag.strategies || [])
+        .map(
+          (strategy) => `
+          <div class="list-item">
+            <strong>${strategy.name}</strong>
+            <p class="muted">${strategy.environment?.name || "Unknown env"} · ${strategy.type}</p>
+            <pre class="code">${JSON.stringify(
+              {
+                parameters: strategy.parameters,
+                constraints: strategy.constraints,
+                segments: strategy.segmentIds,
+                variants: strategy.variants,
+              },
+              null,
+              2,
+            )}</pre>
+          </div>`,
+        )
+        .join("")}
+      <div class="list-item">
+        <strong>Dependencies</strong>
+        <pre class="code">${JSON.stringify(flag.dependencies, null, 2)}</pre>
+      </div>
+      <div class="list-item">
+        <strong>Audit history</strong>
+        <pre class="code">${JSON.stringify(projectAudit, null, 2)}</pre>
+      </div>
+    </div>
+  `;
+}
+
+function renderTokens() {
+  const tokens = state.bootstrap?.tokens || [];
+  els.tokensList.innerHTML = tokens
+    .map(
+      (token) => `
+      <div class="list-item">
+        <strong>${token.name}</strong>
+        <p class="muted">${token.type} · scopes: ${(token.scopes || []).join(", ")}</p>
+        <p class="muted">revoked: ${token.revokedAt ? "yes" : "no"}</p>
+      </div>`,
+    )
+    .join("");
+}
+
+function renderAudit() {
+  els.auditList.innerHTML = (state.bootstrap?.audit || [])
+    .slice(0, 20)
+    .map(
+      (entry) => `
+      <div class="list-item">
+        <strong>${entry.action}</strong>
+        <p class="muted">${entry.resourceType} · ${new Date(entry.createdAt).toLocaleString()}</p>
+      </div>`,
+    )
+    .join("");
+}
+
+async function loadBootstrap() {
+  const bootstrap = await api("/api/admin/bootstrap");
+  state.bootstrap = bootstrap;
+  renderSelectors();
+  renderFlags();
+  renderFlagDetail();
+  renderTokens();
+  renderAudit();
+  await refreshDashboard();
+  els.statusPill.textContent = "Connected";
+}
+
+function parseJson(text) {
+  if (!text.trim()) {
+    return [];
+  }
+  return JSON.parse(text);
+}
+
+els.authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  state.token = els.tokenInput.value.trim();
+  localStorage.setItem("adminToken", state.token);
+  await loadBootstrap().catch((error) => {
+    els.statusPill.textContent = error.message;
+  });
+});
+
+els.projectSelect.addEventListener("change", async () => {
+  state.selectedProjectId = els.projectSelect.value;
+  renderSelectors();
+  renderFlags();
+  renderFlagDetail();
+  await refreshDashboard();
+});
+
+els.environmentSelect.addEventListener("change", async () => {
+  state.selectedEnvironmentId = els.environmentSelect.value;
+  await refreshDashboard();
+});
+
+els.flagsList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-flag-id]");
+  if (!button) {
+    return;
+  }
+  state.selectedFlagId = button.dataset.flagId;
+  renderFlags();
+  renderFlagDetail();
+});
+
+[els.typeFilter, els.staleFilter, els.archivedFilter].forEach((element) => {
+  element.addEventListener("change", () => {
+    renderFlags();
+    renderFlagDetail();
+  });
+});
+
+els.projectForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = new FormData(els.projectForm);
+  const environments = state.bootstrap.environments.filter((environment) =>
+    ["development", "production"].includes(environment.key),
+  );
+  await api("/api/admin/projects", {
+    method: "POST",
+    body: JSON.stringify({
+      name: form.get("name"),
+      key: form.get("key"),
+      description: form.get("description"),
+      environmentIds: environments.map((environment) => environment.id),
+      defaultStrategies: Object.fromEntries(
+        environments.map((environment) => [
+          environment.id,
+          {
+            type: environment.key === "development" ? "enabled_for_all" : "disabled",
+            name: environment.key === "development" ? "Dev default" : "Prod default",
+            parameters: {},
+            constraints: [],
+          },
+        ]),
+      ),
+    }),
+  });
+  els.projectForm.reset();
+  await loadBootstrap();
+});
+
+els.flagForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = new FormData(els.flagForm);
+  const environments = selectedProject()?.environments || [];
+  await api("/api/admin/flags", {
+    method: "POST",
+    body: JSON.stringify({
+      projectId: state.selectedProjectId,
+      name: form.get("name"),
+      key: form.get("key"),
+      type: form.get("type"),
+      description: form.get("description"),
+      impressionData: form.get("impressionData") === "on",
+      environmentIds: environments.map((environment) => environment.id),
+    }),
+  });
+  els.flagForm.reset();
+  await loadBootstrap();
+});
+
+els.strategyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = new FormData(els.strategyForm);
+  const type = String(form.get("type"));
+  await api("/api/admin/strategies", {
+    method: "POST",
+    body: JSON.stringify({
+      flagId: form.get("flagId"),
+      environmentId: state.selectedEnvironmentId,
+      type,
+      name: form.get("name"),
+      parameters:
+        type === "gradual_rollout"
+          ? {
+              rollout: Number(form.get("rollout")),
+              stickiness: form.get("stickiness"),
+            }
+          : {},
+      constraints: parseJson(String(form.get("constraints") || "")),
+      variants: parseJson(String(form.get("variants") || "")),
+      confirmation:
+        selectedEnvironment()?.key === "production"
+          ? `CONFIRM:${selectedEnvironment().key}`
+          : undefined,
+    }),
+  });
+  els.strategyForm.reset();
+  await loadBootstrap();
+});
+
+els.tokenForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = new FormData(els.tokenForm);
+  const payload = await api("/api/admin/tokens", {
+    method: "POST",
+    body: JSON.stringify({
+      name: form.get("name"),
+      type: form.get("type"),
+      scopes: String(form.get("scopes")).split(",").map((scope) => scope.trim()),
+      userId: form.get("type") === "personal" ? state.bootstrap.users[0].id : null,
+      projectIds: state.selectedProjectId ? [state.selectedProjectId] : [],
+      environmentIds: state.selectedEnvironmentId ? [state.selectedEnvironmentId] : [],
+    }),
+  });
+  alert(`Token created once: ${payload.plaintext}`);
+  els.tokenForm.reset();
+  await loadBootstrap();
+});
+
+els.playgroundForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = await api("/api/admin/playground", {
+    method: "POST",
+    body: JSON.stringify({
+      projectId: state.selectedProjectId,
+      environmentId: state.selectedEnvironmentId,
+      context: JSON.parse(els.contextInput.value),
+    }),
+  });
+  els.playgroundOutput.textContent = JSON.stringify(payload, null, 2);
+});
+
+loadBootstrap().catch((error) => {
+  els.statusPill.textContent = error.message;
+});
