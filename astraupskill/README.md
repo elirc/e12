@@ -10,24 +10,26 @@ Start with the [application README](../README.md). Choose a new `FEATURE_FLAGS_D
 
 | Term | Meaning here | Where in this project |
 |---|---|---|
-| workspace revision | One counter for the whole workspace, raised once per accepted mutation. | `meta.version` in `src/server/store.js` and `src/server/storage.js` |
-| If-Match (428) | Every admin write must name the workspace version it reviewed. | `writeVersion` in `src/server/http-boundary.js` |
-| conflict (409) | The refusal when the named version is no longer current. | the expected-version comparison in `src/server/storage.js` |
-| atomic replacement | Write a temporary file, then rename it over the real one. | the `.tmp` path and `renameSync` in `src/server/storage.js` |
-| scope | What a token is allowed to do, such as `write` or `admin`. | `requireScope` in `src/server/services.js` |
-| project membership | A separate question from scope: which projects this actor belongs to. | `canWriteProject` and `requireProjectWrite` in `src/server/services.js` |
-| token hash | Only a hash of an issued token is stored. | `hashToken` in `src/core/hash.js` |
-| snapshot | The compiled, evaluation-ready view of one project environment. | `compileSnapshot` in `src/core/snapshot.js` |
-| bucketing | Turning a stable identity into a number so a rollout percentage is reproducible. | `bucketValue` in `src/core/hash.js`, used by `matchGradualRollout` in `src/core/evaluation.js` |
-| variant weights | Percentages that must add up before a multivariate flag is accepted. | `assertVariantWeights` in `src/server/services.js` |
-| audit entry | The recorded fact of a change, filtered by what the reader may see. | `appendAudit` and `visibleAudit` in `src/server/services.js` |
-| protected environment acknowledgment | An explicit confirmation required before a production change. | `assertProtectedEnvironmentConfirmation` in `src/server/services.js` |
+| workspace revision | One counter for the whole workspace, raised once per accepted mutation. | `meta.version`, incremented in `mutate` at `src/server/storage.js:308-313` |
+| If-Match (428) | Every admin write must name the workspace version it reviewed. | `writeVersion` at `src/server/http-boundary.js:59-75` |
+| conflict (409) | The refusal when the named version is no longer current. | the version-and-digest comparison at `src/server/storage.js:292-301` |
+| atomic replacement | Write a temporary file, then rename it over the real one. | `#commit` at `src/server/storage.js:228-260` (`.tmp` name on 239, `renameSync` on 249) |
+| scope | What a token is allowed to do: `read`, `write`, `admin` or `evaluate`. | `requireScope` at `src/server/services.js:115-121` |
+| project membership | A separate question from scope: which projects this actor belongs to. | `canWriteProject` and `requireProjectWrite` at `src/server/services.js:158-195` |
+| token hash | Only a SHA-256 hash of an issued token is stored. | `hashToken` at `src/core/hash.js:7-9` |
+| snapshot | The compiled, evaluation-ready view of one project environment. | `compileSnapshot` at `src/core/snapshot.js:7-94` |
+| bucketing | Turning a stable identity into a number from 1 to 100 so a rollout percentage is reproducible. | `bucketValue` at `src/core/hash.js:15-19`, used by `matchGradualRollout` at `src/core/evaluation.js:167-191` |
+| variant weights | Percentages that must add up to 100 before a multivariate strategy is accepted. | `assertVariantWeights` at `src/server/services.js:312-339` |
+| audit entry | The recorded fact of a change, filtered by what the reader may see. | `appendAudit` and `visibleAudit` at `src/server/services.js:213-247` |
+| protected environment acknowledgment | The literal string `CONFIRM:<environment key>` required before a change touching a protected environment. | `assertProtectedEnvironmentConfirmation` at `src/server/services.js:271-286` |
+
+Line numbers in this course were checked against the code on 2026-10-06. If you edit the source, regenerate them with `grep -n` rather than trusting the old number.
 
 ## Learning route
 
 Read [the codebase map](01-CODEBASE-MAP.md) and follow one flag from the form to the accepted file. Then study [the concepts](02-CONCEPTS.md), especially the difference between authentication, permission scope, and project membership. Follow [the worked changes](03-WORKED-CHANGE.md) through a persistence failure and a context-cache defect. Use [testing and debugging](04-TESTING-AND-DEBUGGING.md) to reproduce failures without relying on visual impressions. Complete [the practice assignments](05-PRACTICE.md) before reading [solutions and review](06-SOLUTIONS-AND-REVIEW.md). Finish with [the trace lab](07-TRACE-LAB.md) and record the commands you ran in your own copy of [the verification checklist](VERIFICATION.md).
 
-Plan several focused sessions rather than one marathon. In the first session, run the app and create a development-only flag. In the second, trace its request, explain every foreign key, and reproduce an invalid update. In the third, open two tabs and resolve a stale edit. In the fourth, investigate a failed storage replacement in a test. In later sessions, implement one practice change with a test and ask another developer to review the behavior and the explanation.
+Plan several focused sessions rather than one marathon. In the first session, run `npm test` (98 cases on Node 22, no install step) and create a development-only flag. In the second, trace its request, explain every reference, and reproduce an invalid update. In the third, open two tabs and resolve a stale edit. In the fourth, investigate a failed storage replacement in a test. After that, work through the practice exercises in order. Each one gives you a `node --test` file to run, so you get a pass/fail answer without a browser.
 
 ## First practical example
 

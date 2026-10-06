@@ -1,5 +1,7 @@
 # Verification guide and limits
 
+> **Status, 2026-10-06.** The figures below come from the fix pass and are frozen in `verification/validated-results.json`. On this date `node verification/run-tests.js` was re-run on Node 22.16.0 and reported 98 tests, 98 pass, 0 fail (about 18 s here, against the recorded 32.54 s). The browser workflows were not re-run. The line numbers cited across this course were re-checked against the source on the same date.
+
 The completed implementation has **118 distinct passing checks**: 98 backend tests and 20 real Chromium workflows. The [machine-readable results](../verification/validated-results.json) record commands, outcomes, workflow names, setup gates, and preservation evidence. Repeated focused/full/clean-copy cases are counted once.
 
 The full backend run passed all 98 cases. It covers typed contracts, current-token authorization, project scoping, reference-safe resource deletion, protected-environment acknowledgment, metrics batches/limits, request snapshots, durable-write ordering and failure injection, SDK/context behavior, and seed isolation. A later fresh source copy ran the documented `npm test` script and passed the same 98 cases after source formatting, with no npm installation or runtime package dependencies.
@@ -20,19 +22,19 @@ All five final workflow screenshots were opened and reviewed. The tested desktop
 
 ## Browser toolchain, pinned
 
-The Node side is pinned in `package-lock.json`. The browser side used Python 3.13 (3.13.3 on the fix-pass machine) with `requirements-browser.txt`:
+The Node side has nothing to pin. `package.json` declares no dependencies, there is no lockfile, and `engines.node` is `>=22`. The browser side used Python 3.13 (3.13.3 on the fix-pass machine) with [verification/requirements-browser.txt](../verification/requirements-browser.txt), which contains a single line:
 
 ```
-(see requirements-browser.txt)
+playwright==1.59.0
 ```
 
-Install with `python -m pip install -r requirements-browser.txt` then `python -m playwright install chromium`; Playwright downloads the Chromium build matching its own version, so pinning Playwright pins Chromium.
+Install with `python -m pip install -r verification/requirements-browser.txt`, then `python -m playwright install chromium`. Playwright downloads the Chromium build that matches its own version, so pinning Playwright pins Chromium. Alternatively, point `ASTRA_BROWSER_EXECUTABLE` at an existing Chromium (`verification/verify_browser.py:319`).
 
 ## Reproduce the backend checks
 
 Run `npm test` from this project. The runner invokes Node's built-in test facility on explicit `.test.js` files. Fixtures create new temporary state, close their own loopback servers, and clean only their own directories. They do not require your workspace token, contact a provider, or reseed `data/state.json`. The backend coverage includes authorization, contracts, reference-safe CRUD, protected configuration, metrics validation, context-sensitive evaluation, SDK refresh behavior, storage replacement failures, and HTTP boundaries.
 
-For a focused investigation, run `node --test test/authorization.test.js` or another actual test file. Preserve the failure output before changing the code, then record the passing output after your fix. Do not add the counts from repeated focused and full runs as if they were distinct tests. A helper module being loaded is not a behavioral case.
+For a focused investigation, run `node --test test/authorization.test.js` or another test file, and add `--test-name-pattern="<part of a test name>"` to narrow it further. The 98 cases are spread over 11 files: storage 19, crud 13, http 11, authorization 10, sdk 10, contracts 9, evaluation-safety 9, metrics 8, evaluation 4, services 3, context-cache 2. Preserve the failure output before changing the code, then record the passing output after your fix. Do not add the counts from repeated focused and full runs as if they were distinct tests. A helper module being loaded is not a behavioral case.
 
 ## Reproduce browser workflows
 

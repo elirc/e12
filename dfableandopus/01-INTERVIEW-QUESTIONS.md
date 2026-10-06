@@ -124,4 +124,4 @@ No. `MAX_BODY_BYTES` is 65536 (`src/server/http-boundary.js:4`) and is checked t
 
 ### F6. "Where would you add an index if this were a database?"
 
-Today every lookup is a linear scan, for example `assertUniqueFlagKey` scanning `state.featureFlags` (`src/server/services.js:249-254`). In Postgres the first indexes are a unique index on flag key, and composite indexes on `(projectId, environmentId)` for `strategies` and `featureFlagEnvironments`, because `compileSnapshot` filters on exactly those (`src/core/snapshot.js:26-34`).
+Today every lookup is a linear scan, for example `assertUniqueFlagKey` scanning `state.featureFlags` (`src/server/services.js:249-254`). In Postgres the first indexes are a unique index on flag key (global today, not per project), an index on `strategies.environment_id`, and a composite index on `(flag_id, environment_id)` for `featureFlagEnvironments`, because `compileSnapshot` filters strategies by environment alone (`src/core/snapshot.js:26-34`) and flag mappings by flag plus environment (`src/core/snapshot.js:51-58`).
